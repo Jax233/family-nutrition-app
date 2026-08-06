@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track 2: UPF Swapper - Family Nutrition</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .badge-pill {
+      background: #fef3c7;
+      color: #b45309;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* Game Layout */
+    .swap-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .column-title {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .item-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .item-box:hover {
+      border-color: #cbd5e1;
+      background: #f1f5f9;
+    }
+
+    .item-box.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      transform: scale(1.02);
+    }
+
+    .item-box.matched {
+      border-color: var(--primary);
+      background: #dcfce7;
+      color: #15803d;
+      cursor: default;
+      pointer-events: none;
+    }
+
+    #feedback {
+      min-height: 48px;
+      font-weight: 600;
+      margin-top: 15px;
+      line-height: 1.4;
+    }
+
+    .progress-bar {
+      background: #e2e8f0;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .progress-fill {
+      background: var(--primary);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-card">
+  <div class="header-nav">
+    <a href="index.html" class="btn-back">← Dashboard</a>
+    <span class="badge-pill">⚡ Track 2: Module 2.1</span>
+  </div>
+
+  <h2>The UPF Swapper</h2>
+  <p>Select an <strong>Ultra-Processed Food</strong> on the left, then select its <strong>Whole-Food Swap</strong> on the right!</p>
+
+  <div class="swap-container">
+    <div>
+      <div class="column-title" style="color: #dc2626;">🍟 Ultra-Processed</div>
+      <div class="item-box" data-id="1" onclick="selectUPF(this)"> Packaged Chips</div>
+      <div class="item-box" data-id="2" onclick="selectUPF(this)"> Sugary Oatmeal</div>
+      <div class="item-box" data-id="3" onclick="selectUPF(this)"> Fizzy Soda</div>
+    </div>
+
+    <div>
+      <div class="column-title" style="color: var(--primary-dark);">🥔 Whole Food Swap</div>
+      <div class="item-box" data-match="2" onclick="selectSwap(this)"> Oats & Fresh Berries</div>
+      <div class="item-box" data-match="3" onclick="selectSwap(this)"> Sparking Water + Fruit</div>
+      <div class="item-box" data-match="1" onclick="selectSwap(this)"> Baked Potato Wedges</div>
+    </div>
+  </div>
+
+  <div id="feedback">Tap a red item first, then tap its healthy swap!</div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+</div>
+
+<script>
+  // 1. Initialize Supabase
+  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+  // Replace with your anon public key:
+  const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let selectedUPF = null;
+  let matchesCount = 0;
+  const totalMatches = 3;
+
+  function selectUPF(element) {
+    if (element.classList.contains('matched')) return;
+    
+    // Clear previous selection
+    document.querySelectorAll('.swap-container div:first-child .item-box').forEach(el => el.classList.remove('selected'));
+    
+    element.classList.add('selected');
+    selectedUPF = element;
+    document.getElementById('feedback').innerText = "Now tap the healthy whole-food swap on the right!";
+  }
+
+  async function selectSwap(element) {
+    if (!selectedUPF || element.classList.contains('matched')) return;
+
+    const upfId = selectedUPF.getAttribute('data-id');
+    const swapMatch = element.getAttribute('data-match');
+
+    if (upfId === swapMatch) {
+      // Correct Match!
+      selectedUPF.classList.remove('selected');
+      selectedUPF.classList.add('matched');
+      element.classList.add('matched');
+      
+      selectedUPF = null;
+      matchesCount++;
+
+      document.getElementById('progress').style.width = (matchesCount / totalMatches * 100) + '%';
+      document.getElementById('feedback').innerHTML = "🎉 <strong>Awesome Swap!</strong> Whole foods give your body steady energy!";
+
+      if (matchesCount === totalMatches) {
+        document.getElementById('feedback').innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Saving your badge...";
+        await saveCompletion();
+      }
+    } else {
+      // Incorrect Match
+      document.getElementById('feedback').innerHTML = "❌ Not quite! Think about which whole food replaces that item best.";
+    }
+  }
+
+  async function saveCompletion() {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      document.getElementById('feedback').innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Real Food Champion (+10 XP)</em> (Sign in to save progress)";
+      return;
+    }
+
+    const userId = session.user.id;
+
+    // 1. Insert Score / Badge Record
+    const { error: scoreErr } = await supabase
+      .from('user_game_scores')
+      .insert([
+        { 
+          user_id: userId, 
+          game_id: 'track2_module2.1', 
+          badge_earned: 'Real Food Champion',
+          xp_gained: 10 
+        }
+      ]);
+
+    // 2. Increment User Total XP in Profiles
+    const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', userId).single();
+    const newXP = (profile?.total_xp || 0) + 10;
+
+    await supabase.from('profiles').update({ total_xp: newXP }).eq('id', userId);
+
+    if (scoreErr) {
+      console.error(scoreErr);
+    } else {
+      document.getElementById('feedback').innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Real Food Champion (+10 XP)</em> saved to your dashboard! 🎉";
+    }
+  }
+</script>
+
+</body>
+</html>
