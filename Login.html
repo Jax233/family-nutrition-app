@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Family Nutrition Platform - Login & Register</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 90vh; margin: 0; }
+    .auth-card { background: white; border-radius: 16px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; }
+    .auth-header { font-size: 24px; font-weight: bold; color: #1e293b; margin-bottom: 8px; }
+    .auth-sub { font-size: 14px; color: #64748b; margin-bottom: 24px; }
+    .tab-group { display: flex; background: #f1f5f9; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; background: none; border-radius: 8px; font-weight: 600; cursor: pointer; color: #64748b; transition: 0.2s; }
+    .tab-btn.active { background: white; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .form-group { text-align: left; margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .btn-submit { width: 100%; background: #22c55e; color: white; border: none; padding: 12px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+    .btn-submit:hover { background: #16a34a; }
+    #messageBox { margin-top: 16px; font-size: 14px; font-weight: 600; }
+    .success { color: #16a34a; }
+    .error { color: #dc2626; }
+  </style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-header">🥗 Family Nutrition</div>
+  <div class="auth-sub">Welcome! Please enter your details below.</div>
+
+  <div class="tab-group">
+    <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Sign In</button>
+    <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Register</button>
+  </div>
+
+  <form id="authForm" onsubmit="handleAuth(event)">
+    <div class="form-group" id="nameGroup" style="display: none;">
+      <label for="displayName">Family / Display Name</label>
+      <input type="text" id="displayName" placeholder="e.g. Smith Family or Alex" />
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input type="email" id="email" required placeholder="parent@example.com" />
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" required placeholder="••••••••" />
+    </div>
+
+    <div class="form-group" id="roleGroup" style="display: none;">
+      <label for="role">Account Type</label>
+      <select id="role">
+        <option value="parent">Parent Account</option>
+        <option value="child">Child Profile</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn-submit" id="submitBtn">Sign In</button>
+  </form>
+
+  <div id="messageBox"></div>
+</div>
+
+<script>
+  // 1. Initialize Supabase
+  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+  // Insert your anon public key below:
+  const SUPABASE_ANON_KEY = "YOUR_ANON_PUBLIC_KEY"; 
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentMode = 'login';
+
+  function switchTab(mode) {
+    currentMode = mode;
+    const isReg = mode === 'register';
+    
+    document.getElementById('tabLogin').classList.toggle('active', !isReg);
+    document.getElementById('tabRegister').classList.toggle('active', isReg);
+    
+    document.getElementById('nameGroup').style.display = isReg ? 'block' : 'none';
+    document.getElementById('roleGroup').style.display = isReg ? 'block' : 'none';
+    
+    document.getElementById('submitBtn').innerText = isReg ? 'Create Account' : 'Sign In';
+    document.getElementById('messageBox').innerText = '';
+  }
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const msg = document.getElementById('messageBox');
+    msg.className = '';
+    msg.innerText = 'Processing...';
+
+    if (currentMode === 'register') {
+      const displayName = document.getElementById('displayName').value;
+      const role = document.getElementById('role').value;
+
+      // Register New User in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: {
+            display_name: displayName,
+            role: role
+          }
+        }
+      });
+
+      if (error) {
+        msg.className = 'error';
+        msg.innerText = error.message;
+      } else {
+        msg.className = 'success';
+        msg.innerText = "🎉 Account created successfully! Please check your email for confirmation.";
+      }
+
+    } else {
+      // Sign In Existing User
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) {
+        msg.className = 'error';
+        msg.innerText = error.message;
+      } else {
+        msg.className = 'success';
+        msg.innerText = "🚀 Login successful! Redirecting to dashboard...";
+        
+        // Save session locally and redirect
+        setTimeout(() => {
+          window.location.href = "index.html"; // Change to your game or home page URL
+        }, 1200);
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
