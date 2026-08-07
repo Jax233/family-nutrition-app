@@ -233,7 +233,7 @@
 
     const userId = session.user.id;
 
-    // 3. Fetch User Profile Data
+    // 3. Fetch User Profile Data (XP and Streak)
     const { data: profile, error: profileErr } = await supabaseClient
       .from('profiles')
       .select('*')
@@ -247,22 +247,34 @@
       document.getElementById('currentStreak').innerText = (profile.current_streak || 0) + " Days";
     }
 
-    // 4. Fetch User Badges
+    // 4. Fetch User Game Scores & Unlock Badges
     const { data: scores, error: scoresErr } = await supabaseClient
       .from('user_game_scores')
       .select('badge_earned')
       .eq('user_id', userId);
 
-    if (scores) {
+    if (scoresErr) {
+      console.error("Error loading scores/badges:", scoresErr);
+    }
+
+    if (scores && scores.length > 0) {
       scores.forEach(item => {
+        // Unlock Alias Detective Badge
         if (item.badge_earned === 'Alias Detective') {
-          document.getElementById('badge-alias').classList.add('unlocked');
+          const badgeEl = document.getElementById('badge-alias');
+          if (badgeEl) badgeEl.classList.add('unlocked');
         }
+        
+        // Unlock Traffic Light Badge
         if (item.badge_earned === 'Traffic Light Pro') {
-          document.getElementById('badge-traffic').classList.add('unlocked');
+          const badgeEl = document.getElementById('badge-traffic');
+          if (badgeEl) badgeEl.classList.add('unlocked');
         }
+        
+        // Unlock Real Food Champion Badge (Track 2)
         if (item.badge_earned === 'Real Food Champion') {
-          document.getElementById('badge-upf').classList.add('unlocked');
+          const badgeEl = document.getElementById('badge-upf');
+          if (badgeEl) badgeEl.classList.add('unlocked');
         }
       });
     }
@@ -275,6 +287,3 @@
 
   loadDashboard();
 </script>
-
-</body>
-</html>
