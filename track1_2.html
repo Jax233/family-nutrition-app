@@ -174,16 +174,7 @@
 </div>
 
 <script>
-  // 1. Initialize Supabase Client Safely
-  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  
-  let supabaseClient = null;
-  if (window.supabase && typeof window.supabase.createClient === 'function') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-
-  // Game Food Items Array
+  // Food Items Array
   const foodItems = [
     { name: "🥣 Plain Greek Yogurt (4g sugar / 100g)", correct: "Green", tip: "Spot on! Plain yogurt gets a Green light because its sugar occurs naturally in milk!" },
     { name: "🥤 Fizzy Cola Drink (11g sugar / 100g)", correct: "Red", tip: "BINGO! Over 10g of sugar per 100g triggers a Red traffic light warning!" },
@@ -192,7 +183,9 @@
   ];
 
   let currentIndex = 0;
+  let supabaseClient = null;
 
+  // Render current food function
   function renderFood() {
     const el = document.getElementById('currentFoodItem');
     if (el && currentIndex < foodItems.length) {
@@ -200,6 +193,7 @@
     }
   }
 
+  // Answer handler
   async function submitCategory(chosenCategory) {
     if (currentIndex >= foodItems.length) return;
 
@@ -215,7 +209,9 @@
       if (currentIndex < foodItems.length) {
         setTimeout(renderFood, 1200);
       } else {
-        document.getElementById('currentFoodItem').innerText = "🎉 All Items Sorted!";
+        const foodDisplay = document.getElementById('currentFoodItem');
+        if (foodDisplay) foodDisplay.innerText = "🎉 All Items Sorted!";
+        
         setTimeout(async () => {
           feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Saving your badge...";
           await saveCompletion();
@@ -226,40 +222,76 @@
     }
   }
 
+  // Database completion handler
   async function saveCompletion() {
     const feedback = document.getElementById('feedback');
 
     if (!supabaseClient) {
-      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> (Offline mode)";
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em>";
       return;
     }
 
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
 
-    if (!session) {
-      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> (Sign in to save progress)";
-      return;
+      if (!session) {
+        feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> (Sign in to save progress)";
+        return;
+      }
+
+      const userId = session.user.id;
+
+      // 1. Save Score & Badge
+      const { error: scoreErr } = await supabaseClient
+        .from('user_game_scores')
+        .insert([
+          { 
+            user_id: userId, 
+            game_id: 'track1_module1.2', 
+            badge_earned: 'Traffic Light Pro',
+            xp_gained: 10 
+          }
+        ]);
+
+      // 2. Increment Profile XP
+      const { data: profile } = await supabaseClient.from('profiles').select('total_xp').eq('id', userId).single();
+      const newXP = (profile?.total_xp || 0) + 10;
+
+      await supabaseClient.from('profiles').update({ total_xp: newXP }).eq('id', userId);
+
+      if (scoreErr) {
+        console.error('Supabase Save Error:', scoreErr);
+        feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em>";
+      } else {
+        feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> saved to your dashboard! 🎉";
+      }
+    } catch (err) {
+      console.error(err);
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em>";
     }
+  }
 
-    const userId = session.user.id;
+  // Safe Initialization
+  function initGame() {
+    // 1. Render food item first so user never sees "Loading..."
+    renderFood();
 
-    // 1. Save Score & Badge to Supabase
-    const { error: scoreErr } = await supabaseClient
-      .from('user_game_scores')
-      .insert([
-        { 
-          user_id: userId, 
-          game_id: 'track1_module1.2', 
-          badge_earned: 'Traffic Light Pro',
-          xp_gained: 10 
-        }
-      ]);
+    // 2. Safely initialize Supabase Client
+    const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
+    
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  }
 
-    // 2. Increment Profile XP
-    const { data: profile } = await supabaseClient.from('profiles').select('total_xp').eq('id', userId).single();
-    const newXP = (profile?.total_xp || 0) + 10;
+  // Run immediately on page events
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGame);
+  } else {
+    initGame();
+  }
+</script>
 
-    await supabaseClient.from('profiles').update({ total_xp: newXP }).eq('id', userId);
-
-    if (scoreErr) {
-      console.error
+</body>
+</html>
