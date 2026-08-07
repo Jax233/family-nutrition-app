@@ -62,7 +62,7 @@
       font-size: 14px;
     }
 
-    /* Active Food Card to Sort */
+    /* Active Food Card Display */
     .food-card-display {
       background: #f8fafc;
       border: 2px solid #cbd5e1;
@@ -72,6 +72,10 @@
       font-size: 18px;
       font-weight: bold;
       color: #1e293b;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* Traffic Light Bins Grid */
@@ -102,10 +106,11 @@
     .bin-red { background: #ef4444; }
 
     .bin-label {
-      font-size: 14px;
+      font-size: 13px;
       display: block;
       margin-top: 4px;
       opacity: 0.9;
+      font-weight: normal;
     }
 
     #feedback {
@@ -178,5 +183,83 @@
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  // Game Food Queue
-  const foodItems =
+  // Game Food Items Array
+  const foodItems = [
+    { name: "🥣 Plain Greek Yogurt (4g sugar / 100g)", correct: "Green", tip: "Spot on! Plain yogurt gets a Green light because its sugar occurs naturally in milk!" },
+    { name: "🥤 Fizzy Cola Drink (11g sugar / 100g)", correct: "Red", tip: "BINGO! Over 10g of sugar per 100g triggers a Red traffic light warning!" },
+    { name: "🥖 Wholemeal Bread (3.5g sugar / 100g)", correct: "Green", tip: "Great choice! Wholemeal bread stays low in sugar and keeps you full with fiber!" },
+    { name: "🥣 Flavored Oatmeal Packet (8.5g sugar / 100g)", correct: "Amber", tip: "You got it! Between 5g and 10g is an Amber light—enjoy in moderation!" }
+  ];
+
+  let currentIndex = 0;
+
+  function renderFood() {
+    const el = document.getElementById('currentFoodItem');
+    if (el && currentIndex < foodItems.length) {
+      el.innerText = foodItems[currentIndex].name;
+    }
+  }
+
+  async function submitCategory(chosenCategory) {
+    if (currentIndex >= foodItems.length) return;
+
+    const current = foodItems[currentIndex];
+    const feedback = document.getElementById('feedback');
+    const progress = document.getElementById('progress');
+
+    if (chosenCategory === current.correct) {
+      feedback.innerHTML = `🎉 <strong>Correct!</strong> ${current.tip}`;
+      currentIndex++;
+      progress.style.width = (currentIndex / foodItems.length * 100) + '%';
+
+      if (currentIndex < foodItems.length) {
+        setTimeout(renderFood, 1200);
+      } else {
+        document.getElementById('currentFoodItem').innerText = "🎉 All Items Sorted!";
+        setTimeout(async () => {
+          feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Saving your badge...";
+          await saveCompletion();
+        }, 1000);
+      }
+    } else {
+      feedback.innerHTML = `❌ <strong>Not quite!</strong> Think about whether this item is low, medium, or high in sugar per 100g.`;
+    }
+  }
+
+  async function saveCompletion() {
+    const feedback = document.getElementById('feedback');
+
+    if (!supabaseClient) {
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> (Offline mode)";
+      return;
+    }
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Traffic Light Pro (+10 XP)</em> (Sign in to save progress)";
+      return;
+    }
+
+    const userId = session.user.id;
+
+    // 1. Save Score & Badge to Supabase
+    const { error: scoreErr } = await supabaseClient
+      .from('user_game_scores')
+      .insert([
+        { 
+          user_id: userId, 
+          game_id: 'track1_module1.2', 
+          badge_earned: 'Traffic Light Pro',
+          xp_gained: 10 
+        }
+      ]);
+
+    // 2. Increment Profile XP
+    const { data: profile } = await supabaseClient.from('profiles').select('total_xp').eq('id', userId).single();
+    const newXP = (profile?.total_xp || 0) + 10;
+
+    await supabaseClient.from('profiles').update({ total_xp: newXP }).eq('id', userId);
+
+    if (scoreErr) {
+      console.error
