@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Family Dashboard - Family Nutrition Platform</title>
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
     :root {
       --primary: #22c55e;
@@ -184,10 +186,18 @@
 
   <div class="game-card">
     <div class="game-details">
-      <h3>Track 1: Label Detective</h3>
+      <h3>Track 1.1: Label Detective</h3>
       <p>Spot hidden sugar names & aliases (+10 XP)</p>
     </div>
     <a href="track1.html" class="btn-play">Play</a>
+  </div>
+
+  <div class="game-card">
+    <div class="game-details">
+      <h3>Track 1.2: Traffic Light Labels</h3>
+      <p>Sort items into Green, Amber & Red sugar bins (+10 XP)</p>
+    </div>
+    <a href="track1_2.html" class="btn-play">Play</a>
   </div>
 
   <div class="game-card">
@@ -220,9 +230,18 @@
   // 1. Initialize Supabase Client safely
   const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  
+  let supabaseClient = null;
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
 
   async function loadDashboard() {
+    if (!supabaseClient) {
+      console.error("Supabase client failed to initialize.");
+      return;
+    }
+
     // 2. Check if User is Logged In
     const { data: { session } } = await supabaseClient.auth.getSession();
 
@@ -259,13 +278,13 @@
 
     if (scores && scores.length > 0) {
       scores.forEach(item => {
-        // Unlock Alias Detective Badge
+        // Unlock Alias Detective Badge (Track 1.1)
         if (item.badge_earned === 'Alias Detective') {
           const badgeEl = document.getElementById('badge-alias');
           if (badgeEl) badgeEl.classList.add('unlocked');
         }
         
-        // Unlock Traffic Light Badge
+        // Unlock Traffic Light Badge (Track 1.2)
         if (item.badge_earned === 'Traffic Light Pro') {
           const badgeEl = document.getElementById('badge-traffic');
           if (badgeEl) badgeEl.classList.add('unlocked');
@@ -281,9 +300,14 @@
   }
 
   async function logout() {
-    await supabaseClient.auth.signOut();
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    }
     window.location.href = "login.html";
   }
 
   loadDashboard();
 </script>
+
+</body>
+</html>
