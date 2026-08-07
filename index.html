@@ -217,25 +217,24 @@
 </div>
 
 <script>
-  // 1. Initialize Supabase
+  // 1. Initialize Supabase Client safely
   const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function loadDashboard() {
     // 2. Check if User is Logged In
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
-      // If not logged in, redirect to login page
       window.location.href = "login.html";
       return;
     }
 
     const userId = session.user.id;
 
-    // 3. Fetch User Profile Data from Supabase
-    const { data: profile, error: profileErr } = await supabase
+    // 3. Fetch User Profile Data
+    const { data: profile, error: profileErr } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', userId)
@@ -248,8 +247,8 @@
       document.getElementById('currentStreak').innerText = (profile.current_streak || 0) + " Days";
     }
 
-    // 4. Fetch User Badges and Unlock Displays
-    const { data: scores, error: scoresErr } = await supabase
+    // 4. Fetch User Badges
+    const { data: scores, error: scoresErr } = await supabaseClient
       .from('user_game_scores')
       .select('badge_earned')
       .eq('user_id', userId);
@@ -270,11 +269,10 @@
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = "login.html";
   }
 
-  // Run on page load
   loadDashboard();
 </script>
 
