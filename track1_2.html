@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track 1.2: Traffic Light Labels - Family Nutrition</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .badge-pill {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* Active Food Card to Sort */
+    .food-card-display {
+      background: #f8fafc;
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 16px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: #1e293b;
+    }
+
+    /* Traffic Light Bins Grid */
+    .bin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .light-bin {
+      border-radius: 12px;
+      padding: 16px 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s;
+      user-select: none;
+    }
+
+    .light-bin:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+
+    .bin-green { background: #22c55e; }
+    .bin-amber { background: #f59e0b; }
+    .bin-red { background: #ef4444; }
+
+    .bin-label {
+      font-size: 14px;
+      display: block;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+
+    #feedback {
+      min-height: 48px;
+      font-weight: 600;
+      margin-top: 15px;
+      line-height: 1.4;
+    }
+
+    .progress-bar {
+      background: #e2e8f0;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .progress-fill {
+      background: var(--primary);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-card">
+  <div class="header-nav">
+    <a href="index.html" class="btn-back">← Dashboard</a>
+    <span class="badge-pill">🚦 Track 1: Module 1.2</span>
+  </div>
+
+  <h2>Traffic Light Sorter</h2>
+  <p>Read the sugar details for the item below, then tap the matching Traffic Light category!</p>
+
+  <div class="food-card-display" id="currentFoodItem">
+    Loading Food Item...
+  </div>
+
+  <div class="bin-grid">
+    <div class="light-bin bin-green" onclick="submitCategory('Green')">
+      🟢 GREEN
+      <span class="bin-label">Low Sugar</span>
+    </div>
+    <div class="light-bin bin-amber" onclick="submitCategory('Amber')">
+      🟠 AMBER
+      <span class="bin-label">Medium Sugar</span>
+    </div>
+    <div class="light-bin bin-red" onclick="submitCategory('Red')">
+      🔴 RED
+      <span class="bin-label">High Sugar</span>
+    </div>
+  </div>
+
+  <div id="feedback">Tap Green, Amber, or Red for the item above!</div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+</div>
+
+<script>
+  // 1. Initialize Supabase Client Safely
+  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
+  
+  let supabaseClient = null;
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  // Game Food Queue
+  const foodItems =
