@@ -84,6 +84,7 @@
       font-weight: 600;
       font-size: 14px;
       transition: all 0.2s;
+      user-select: none;
     }
 
     .item-box:hover {
@@ -163,10 +164,10 @@
 </div>
 
 <script>
-  // 1. Initialize Supabase
+  // 1. Initialize Supabase Client safely
   const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let selectedUPF = null;
   let matchesCount = 0;
@@ -175,7 +176,6 @@
   function selectUPF(element) {
     if (element.classList.contains('matched')) return;
     
-    // Clear previous selection
     document.querySelectorAll('.swap-container div:first-child .item-box').forEach(el => el.classList.remove('selected'));
     
     element.classList.add('selected');
@@ -190,7 +190,6 @@
     const swapMatch = element.getAttribute('data-match');
 
     if (upfId === swapMatch) {
-      // Correct Match!
       selectedUPF.classList.remove('selected');
       selectedUPF.classList.add('matched');
       element.classList.add('matched');
@@ -206,13 +205,12 @@
         await saveCompletion();
       }
     } else {
-      // Incorrect Match
       document.getElementById('feedback').innerHTML = "❌ Not quite! Think about which whole food replaces that item best.";
     }
   }
 
   async function saveCompletion() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
     if (!session) {
       document.getElementById('feedback').innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Real Food Champion (+10 XP)</em> (Sign in to save progress)";
@@ -221,8 +219,8 @@
 
     const userId = session.user.id;
 
-    // 1. Insert Score / Badge Record
-    const { error: scoreErr } = await supabase
+    // Save Game Completion
+    const { error: scoreErr } = await supabaseClient
       .from('user_game_scores')
       .insert([
         { 
@@ -233,11 +231,11 @@
         }
       ]);
 
-    // 2. Increment User Total XP in Profiles
-    const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', userId).single();
+    // Update Profile Total XP
+    const { data: profile } = await supabaseClient.from('profiles').select('total_xp').eq('id', userId).single();
     const newXP = (profile?.total_xp || 0) + 10;
 
-    await supabase.from('profiles').update({ total_xp: newXP }).eq('id', userId);
+    await supabaseClient.from('profiles').update({ total_xp: newXP }).eq('id', userId);
 
     if (scoreErr) {
       console.error(scoreErr);
