@@ -1,146 +1,71 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Track 1: Sugar Alias Detective - Family Nutrition</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --primary: #22c55e;
-      --primary-dark: #16a34a;
-      --bg: #f0f4f8;
-      --card-bg: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
+<script>
+  // 1. Initialize Supabase Client safely
+  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function loadDashboard() {
+    // 2. Check if User is Logged In
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+      window.location.href = "login.html";
+      return;
     }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg);
-      color: var(--text-main);
-      margin: 0;
-      padding: 20px;
-      display: flex;
-      justify-content: center;
+    const userId = session.user.id;
+
+    // 3. Fetch User Profile Data (XP and Streak)
+    const { data: profile, error: profileErr } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (profile) {
+      document.getElementById('userDisplayName').innerText = profile.display_name || "Welcome Family!";
+      document.getElementById('userRole').innerText = (profile.role === 'child' ? 'Child Profile' : 'Parent Account');
+      document.getElementById('totalXP').innerText = profile.total_xp || 0;
+      document.getElementById('currentStreak').innerText = (profile.current_streak || 0) + " Days";
     }
 
-    .game-card {
-      background: var(--card-bg);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 500px;
-      width: 100%;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-      text-align: center;
+    // 4. Fetch User Game Scores & Unlock Badges
+    const { data: scores, error: scoresErr } = await supabaseClient
+      .from('user_game_scores')
+      .select('badge_earned')
+      .eq('user_id', userId);
+
+    if (scoresErr) {
+      console.error("Error loading scores/badges:", scoresErr);
     }
 
-    .badge-pill {
-      background: #e0f2fe;
-      color: #0369a1;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 13px;
-      display: inline-block;
-      margin-bottom: 12px;
+    if (scores && scores.length > 0) {
+      scores.forEach(item => {
+        // Unlock Alias Detective Badge
+        if (item.badge_earned === 'Alias Detective') {
+          const badgeEl = document.getElementById('badge-alias');
+          if (badgeEl) badgeEl.classList.add('unlocked');
+        }
+        
+        // Unlock Traffic Light Badge
+        if (item.badge_earned === 'Traffic Light Pro') {
+          const badgeEl = document.getElementById('badge-traffic');
+          if (badgeEl) badgeEl.classList.add('unlocked');
+        }
+        
+        // Unlock Real Food Champion Badge (Track 2)
+        if (item.badge_earned === 'Real Food Champion') {
+          const badgeEl = document.getElementById('badge-upf');
+          if (badgeEl) badgeEl.classList.add('unlocked');
+        }
+      });
     }
+  }
 
-    .header-nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
+  async function logout() {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  }
 
-    .btn-back {
-      color: var(--text-muted);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    /* Label Hotspot Area */
-    .label-box {
-      background: #fffbe6;
-      border: 2px dashed #f59e0b;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px 0;
-      text-align: left;
-      line-height: 2.2;
-      font-size: 16px;
-    }
-
-    .word {
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: all 0.2s;
-      display: inline-block;
-      user-select: none;
-      font-weight: 600;
-    }
-
-    .word:hover {
-      background: #fef08a;
-    }
-
-    .word.found {
-      background: var(--primary) !important;
-      color: white !important;
-      font-weight: bold;
-      transform: scale(1.05);
-      cursor: default;
-    }
-
-    .word.wrong {
-      background: #ef4444;
-      color: white;
-      animation: shake 0.3s;
-    }
-
-    #feedback {
-      min-height: 48px;
-      font-weight: 600;
-      margin-top: 15px;
-      line-height: 1.4;
-    }
-
-    .progress-bar {
-      background: #e2e8f0;
-      height: 10px;
-      border-radius: 5px;
-      overflow: hidden;
-      margin-top: 15px;
-    }
-
-    .progress-fill {
-      background: var(--primary);
-      height: 100%;
-      width: 0%;
-      transition: width 0.3s;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-  </style>
-</head>
-<body>
-
-<div class="game-card">
-  <div class="header-nav">
-    <a href="index.html" class="btn-back">← Dashboard</a>
-    <span class="badge-pill">🕵️‍♂️ Track 1: Module 1.1</span>
-  </div>
-
-  <h2>The Sugar Alias Detective</h2>
-  <p>Can you spot the <strong>3 hidden sugars</strong> in this ingredient list?</p>
-
-  <div class="label-box">
-    <strong>INGREDIENTS:</strong> 
-    <span class="word" onclick="checkWord(this, false)">Whole Grain Oats</span>, 
-    <span class="word" onclick="checkWord(this, true, 'Maltodextrin')">Maltodextrin</span>
+  loadDashboard();
+</script>
