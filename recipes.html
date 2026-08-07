@@ -62,6 +62,7 @@
       overflow-x: auto;
       padding-bottom: 8px;
       margin-bottom: 20px;
+      -webkit-overflow-scrolling: touch;
     }
 
     .filter-btn {
@@ -89,7 +90,7 @@
       gap: 16px;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 500px) {
       .recipe-grid { grid-template-columns: 1fr; }
     }
 
@@ -107,29 +108,34 @@
     .recipe-card:hover { transform: translateY(-3px); }
 
     .recipe-img {
-      height: 120px;
-      background: #e2e8f0;
+      height: 110px;
+      background: #f1f5f9;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 48px;
+      font-size: 44px;
     }
 
     .recipe-body {
       padding: 14px;
       flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .recipe-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: bold;
       margin: 0 0 6px 0;
+      color: #1e293b;
     }
 
     .recipe-meta {
       font-size: 12px;
       color: var(--text-muted);
       margin-bottom: 12px;
+      font-weight: 500;
     }
 
     .btn-cook {
@@ -234,7 +240,9 @@
     <button class="filter-btn active" onclick="filterRecipes('all', this)">All Recipes</button>
     <button class="filter-btn" onclick="filterRecipes('20min', this)">⚡ 20-Min Meals</button>
     <button class="filter-btn" onclick="filterRecipes('airfryer', this)">🍟 Air Fryer</button>
+    <button class="filter-btn" onclick="filterRecipes('fakeaway', this)">🍕 Fakeaway Friday</button>
     <button class="filter-btn" onclick="filterRecipes('budget', this)">💰 Budget Friendly</button>
+    <button class="filter-btn" onclick="filterRecipes('batch', this)">📦 Batch Cooking</button>
   </div>
 
   <div class="recipe-grid" id="recipeGrid">
@@ -270,7 +278,7 @@
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 
-  // Recipe Catalog Data
+  // Expanded Recipe Catalog Data
   const recipes = [
     {
       id: "wedges",
@@ -281,10 +289,40 @@
       servings: "4 Servings",
       ingredients: ["4 Large Potatoes (washed & cut into wedges)", "1 tbsp Olive Oil", "1 tsp Paprika & Garlic Powder", "Pinch of Sea Salt"],
       steps: [
-        "Toss the potato wedges in olive oil, paprika, garlic powder, and salt in a large bowl.",
-        "Preheat your air fryer to 200°C.",
-        "Cook wedges in the air fryer basket for 15–18 minutes, shaking halfway through until golden & crispy!",
-        "Serve warm with fresh yogurt or salsa dip!"
+        "Toss potato wedges in olive oil, paprika, garlic powder, and salt in a bowl.",
+        "Preheat air fryer to 200°C.",
+        "Cook wedges for 15–18 minutes, shaking halfway until golden and crispy!",
+        "Serve warm with fresh yogurt or salsa dip."
+      ]
+    },
+    {
+      id: "pitta_pizza",
+      title: "10-Minute Mini Pitta Pizzas",
+      icon: "🍕",
+      tags: ["20min", "budget", "fakeaway"],
+      time: "10 Mins",
+      servings: "4 Servings",
+      ingredients: ["4 Wholemeal Pitta Breads", "4 tbsp Tomato Passata or Salsa", "1 cup Grated Mozzarella Cheese", "Sliced Veggies (Sweetcorn, Peppers, Mushrooms)"],
+      steps: [
+        "Lightly toast wholemeal pittas in a toaster for 1 minute.",
+        "Let kids spoon tomato passata evenly over each pitta base.",
+        "Top with grated mozzarella and let kids create fun veggie faces!",
+        "Bake in an oven or air fryer at 190°C for 5 minutes until cheese bubbles."
+      ]
+    },
+    {
+      id: "chicken_tenders",
+      title: "Crispy Air Fryer Chicken Tenders",
+      icon: "🍗",
+      tags: ["airfryer", "fakeaway"],
+      time: "20 Mins",
+      servings: "4 Servings",
+      ingredients: ["400g Chicken Breast (cut into strips)", "1 Egg (beaten)", "1 cup Wholewheat Breadcrumbs or Crushed Cornflakes", "1 tsp Garlic Powder & Herbs"],
+      steps: [
+        "Mix garlic powder and herbs into the breadcrumbs/cornflakes in a shallow bowl.",
+        "Dip chicken strips into beaten egg, then coat thoroughly in crispy breadcrumbs.",
+        "Place strips in the air fryer basket at 190°C for 12–14 minutes.",
+        "Check that chicken is cooked through and serve with cucumber sticks!"
       ]
     },
     {
@@ -294,11 +332,54 @@
       tags: ["20min", "budget"],
       time: "15 Mins",
       servings: "4 Servings",
-      ingredients: ["4 Wholemeal Tortilla Wraps", "1 Can Chickpeas or Shredded Chicken", "1 Grated Carrot & Sliced Cucumber", "1 Red Pepper (thinly sliced)", "Hummus or Greek Yogurt"],
+      ingredients: ["4 Wholemeal Tortilla Wraps", "1 Can Chickpeas (drained) or Cooked Chicken", "1 Grated Carrot & Sliced Cucumber", "1 Red Pepper (thinly sliced)", "Hummus or Greek Yogurt"],
       steps: [
-        "Spread 2 tablespoons of hummus or yogurt evenly across each tortilla wrap.",
-        "Let children lay out the colorful veggies and protein down the middle of their wrap.",
-        "Fold in the sides, roll tightly, and slice in half!"
+        "Spread 2 tablespoons of hummus or yogurt across each tortilla wrap.",
+        "Lay out colorful veggies and protein in strips down the center.",
+        "Fold in the bottom, roll tightly, and slice in half to reveal the rainbow!"
+      ]
+    },
+    {
+      id: "pasta_bake",
+      title: "Hidden-Veggie Tomato Pasta Bake",
+      icon: "🍝",
+      tags: ["batch", "budget"],
+      time: "35 Mins",
+      servings: "6 Servings",
+      ingredients: ["300g Wholemeal Pasta", "1 Can Chopped Tomatoes", "1 Courgette & 1 Carrot (finely grated)", "1 Can Sweetcorn", "1 cup Cheddar Cheese (grated)"],
+      steps: [
+        "Boil pasta according to packet instructions.",
+        "In a pan, simmer chopped tomatoes with finely grated carrot and courgette for 10 minutes until soft.",
+        "Blend sauce until smooth, then stir in sweetcorn and cooked pasta.",
+        "Transfer to a baking dish, top with cheese, and bake at 200°C for 15 minutes."
+      ]
+    },
+    {
+      id: "quesadilla",
+      title: "Black Bean & Sweetcorn Quesadillas",
+      icon: "🌮",
+      tags: ["20min", "budget"],
+      time: "15 Mins",
+      servings: "4 Servings",
+      ingredients: ["4 Tortilla Wraps", "1 Can Black Beans (rinsed & lightly mashed)", "1/2 Can Sweetcorn", "1 cup Grated Cheese", "1 tsp Mild Taco Seasoning"],
+      steps: [
+        "Stir mashed black beans, sweetcorn, and taco seasoning in a bowl.",
+        "Spread bean mixture over half of each tortilla, top with cheese, and fold in half.",
+        "Cook in a dry frying pan for 2–3 minutes per side until crisp and melted."
+      ]
+    },
+    {
+      id: "oat_cookies",
+      title: "3-Ingredient Oat & Banana Cookies",
+      icon: "🍪",
+      tags: ["20min", "budget"],
+      time: "15 Mins",
+      servings: "10 Cookies",
+      ingredients: ["2 Ripe Bananas (mashed)", "1.5 cups Rolled Oats", "1/4 cup Raisins or Dark Chocolate Chips"],
+      steps: [
+        "Mash bananas in a bowl with a fork until smooth.",
+        "Stir in rolled oats and raisins until a thick dough forms.",
+        "Spoon onto a lined baking sheet and bake at 180°C for 12–15 minutes until set."
       ]
     },
     {
@@ -308,11 +389,11 @@
       tags: ["20min"],
       time: "5 Mins",
       servings: "2 Servings",
-      ingredients: ["1 cup Frozen Mixed Berries", "1 Whole Banana", "1/2 cup Plain Greek Yogurt", "1 cup Water or Milk of Choice"],
+      ingredients: ["1 cup Frozen Mixed Berries", "1 Banana", "1/2 cup Plain Greek Yogurt", "1 cup Water or Milk of Choice"],
       steps: [
-        "Add frozen berries, banana, yogurt, and liquid into a blender.",
-        "Blend on high for 45 seconds until smooth and creamy.",
-        "Pour into cups and enjoy a nutrient-rich whole food drink!"
+        "Add berries, banana, yogurt, and milk into a blender.",
+        "Blend on high for 45 seconds until thick and smooth.",
+        "Pour into glasses and enjoy a whole-food hydration boost!"
       ]
     }
   ];
@@ -332,8 +413,10 @@
         <div class="recipe-card">
           <div class="recipe-img">${r.icon}</div>
           <div class="recipe-body">
-            <h3 class="recipe-title">${r.title}</h3>
-            <div class="recipe-meta">⏱️ ${r.time} • 👥 ${r.servings}</div>
+            <div>
+              <h3 class="recipe-title">${r.title}</h3>
+              <div class="recipe-meta">⏱️ ${r.time} • 👥 ${r.servings}</div>
+            </div>
             <button class="btn-cook" onclick="openModal('${r.id}')">Start Cooking</button>
           </div>
         </div>
@@ -401,12 +484,6 @@
             xp_gained: 15 
           }
         ]);
-
-      // 2. Increment Profile XP
-      const { data: profile } = await supabaseClient.from('profiles').select('total_xp').eq('id', userId).single();
-      const newXP = (profile?.total_xp || 0) + 15;
-
-      await supabaseClient.from('profiles').update({ total_xp: newXP }).eq('id', userId);
 
       feedback.innerHTML = "🎉 <strong>MISSION COMPLETE!</strong> +15 XP added to your Family Dashboard!";
       
