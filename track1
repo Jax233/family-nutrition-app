@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Track 1: Sugar Alias Detective - Family Nutrition</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .badge-pill {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 13px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    .header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .btn-back {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    /* Label Hotspot Area */
+    .label-box {
+      background: #fffbe6;
+      border: 2px dashed #f59e0b;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: left;
+      line-height: 2.2;
+      font-size: 16px;
+    }
+
+    .word {
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      display: inline-block;
+    }
+
+    .word:hover {
+      background: #fef08a;
+    }
+
+    .word.found {
+      background: var(--primary) !important;
+      color: white !important;
+      font-weight: bold;
+      transform: scale(1.05);
+    }
+
+    .word.wrong {
+      background: #ef4444;
+      color: white;
+      animation: shake 0.3s;
+    }
+
+    #feedback {
+      min-height: 48px;
+      font-weight: 600;
+      margin-top: 15px;
+      line-height: 1.4;
+    }
+
+    .progress-bar {
+      background: #e2e8f0;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .progress-fill {
+      background: var(--primary);
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-card">
+  <div class="header-nav">
+    <a href="index.html" class="btn-back">← Dashboard</a>
+    <span class="badge-pill">🕵️‍♂️ Track 1: Module 1.1</span>
+  </div>
+
+  <h2>The Sugar Alias Detective</h2>
+  <p>Can you spot the <strong>3 hidden sugars</strong> in this ingredient list?</p>
+
+  <div class="label-box">
+    <strong>INGREDIENTS:</strong> Whole Grain Oats, 
+    <span class="word" data-sugar="true" data-name="Maltodextrin">Maltodextrin</span>, 
+    Dried Apples, 
+    <span class="word" data-sugar="true" data-name="Brown Rice Syrup">Brown Rice Syrup</span>, 
+    Cinnamon, 
+    <span class="word" data-sugar="true" data-name="Evaporated Cane Juice">Evaporated Cane Juice</span>, 
+    Sea Salt.
+  </div>
+
+  <div id="feedback">Tap an ingredient to inspect it!</div>
+
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+</div>
+
+<script>
+  // 1. Initialize Supabase
+  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let foundCount = 0;
+  const totalSugars = 3;
+  const words = document.querySelectorAll('.word');
+  const feedback = document.getElementById('feedback');
+  const progress = document.getElementById('progress');
+
+  words.forEach(word => {
+    word.addEventListener('click', async () => {
+      if (word.classList.contains('found')) return;
+
+      const isSugar = word.getAttribute('data-sugar') === 'true';
+      const name = word.getAttribute('data-name');
+
+      if (isSugar) {
+        word.classList.add('found');
+        foundCount++;
+        progress.style.width = (foundCount / totalSugars * 100) + '%';
+
+        if (name === 'Maltodextrin') feedback.innerHTML = "🎉 BAM! You found Maltodextrin! Anything ending in '-trin' or '-ose' is usually sugar!";
+        if (name === 'Brown Rice Syrup') feedback.innerHTML = "🎉 Gotcha! Don't let the word 'Rice' fool you—it's 100% sugar!";
+        if (name === 'Evaporated Cane Juice') feedback.innerHTML = "🎉 Nice detective work! 'Cane Juice' is just fancy code for raw sugar!";
+
+        if (foundCount === totalSugars) {
+          setTimeout(async () => {
+            feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Saving your badge...";
+            await saveCompletion();
+          }, 800);
+        }
+      } else {
+        word.classList.add('wrong');
+        feedback.innerHTML = "❌ Not quite! That's a whole food or spice. Try again!";
+        setTimeout(() => word.classList.remove('wrong'), 500);
+      }
+    });
+  });
+
+  async function saveCompletion() {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Alias Detective (+10 XP)</em> (Sign in to save progress)";
+      return;
+    }
+
+    const userId = session.user.id;
+
+    // 1. Insert Score / Badge Record
+    const { error: scoreErr } = await supabase
+      .from('user_game_scores')
+      .insert([
+        { 
+          user_id: userId, 
+          game_id: 'track1_module1.1', 
+          badge_earned: 'Alias Detective',
+          xp_gained: 10 
+        }
+      ]);
+
+    // 2. Increment Profile XP
+    const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', userId).single();
+    const newXP = (profile?.total_xp || 0) + 10;
+
+    await supabase.from('profiles').update({ total_xp: newXP }).eq('id', userId);
+
+    if (scoreErr) {
+      console.error(scoreErr);
+    } else {
+      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Alias Detective (+10 XP)</em> saved to your dashboard! 🎉";
+    }
+  }
+</script>
+
+</body>
+</html>
