@@ -79,6 +79,7 @@
       transition: all 0.2s;
       display: inline-block;
       user-select: none;
+      font-weight: 600;
     }
 
     .word:hover {
@@ -90,6 +91,7 @@
       color: white !important;
       font-weight: bold;
       transform: scale(1.05);
+      cursor: default;
     }
 
     .word.wrong {
@@ -139,37 +141,6 @@
   <p>Can you spot the <strong>3 hidden sugars</strong> in this ingredient list?</p>
 
   <div class="label-box">
-    <strong>INGREDIENTS:</strong> Whole Grain Oats, 
-    <span class="word" data-sugar="true" data-name="Maltodextrin">Maltodextrin</span>, 
-    Dried Apples, 
-    <span class="word" data-sugar="true" data-name="Brown Rice Syrup">Brown Rice Syrup</span>, 
-    Cinnamon, 
-    <span class="word" data-sugar="true" data-name="Evaporated Cane Juice">Evaporated Cane Juice</span>, 
-    Sea Salt.
-  </div>
-
-  <div id="feedback">Tap an ingredient to inspect it!</div>
-
-  <div class="progress-bar">
-    <div class="progress-fill" id="progress"></div>
-  </div>
-</div>
-
-<script>
-  // 1. Initialize Supabase Client safely
-  const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  let foundCount = 0;
-  const totalSugars = 3;
-  const words = document.querySelectorAll('.word');
-  const feedback = document.getElementById('feedback');
-  const progress = document.getElementById('progress');
-
-  words.forEach(word => {
-    word.addEventListener('click', async () => {
-      if (word.classList.contains('found')) return;
-
-      const isSugar = word.getAttribute('data-sugar') === 'true';
-      const name = word.getAttribute('
+    <strong>INGREDIENTS:</strong> 
+    <span class="word" onclick="checkWord(this, false)">Whole Grain Oats</span>, 
+    <span class="word" onclick="checkWord(this, true, 'Maltodextrin')">Maltodextrin</span>
