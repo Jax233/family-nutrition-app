@@ -78,6 +78,7 @@
       border-radius: 6px;
       transition: all 0.2s;
       display: inline-block;
+      user-select: none;
     }
 
     .word:hover {
@@ -155,10 +156,10 @@
 </div>
 
 <script>
-  // 1. Initialize Supabase
+  // 1. Initialize Supabase Client safely
   const SUPABASE_URL = "https://sdikoeoysrrdwvrhgykd.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_HcVz-d4a-evy9mRYMFDuxA_s-lhQshs";
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let foundCount = 0;
   const totalSugars = 3;
@@ -171,66 +172,4 @@
       if (word.classList.contains('found')) return;
 
       const isSugar = word.getAttribute('data-sugar') === 'true';
-      const name = word.getAttribute('data-name');
-
-      if (isSugar) {
-        word.classList.add('found');
-        foundCount++;
-        progress.style.width = (foundCount / totalSugars * 100) + '%';
-
-        if (name === 'Maltodextrin') feedback.innerHTML = "🎉 BAM! You found Maltodextrin! Anything ending in '-trin' or '-ose' is usually sugar!";
-        if (name === 'Brown Rice Syrup') feedback.innerHTML = "🎉 Gotcha! Don't let the word 'Rice' fool you—it's 100% sugar!";
-        if (name === 'Evaporated Cane Juice') feedback.innerHTML = "🎉 Nice detective work! 'Cane Juice' is just fancy code for raw sugar!";
-
-        if (foundCount === totalSugars) {
-          setTimeout(async () => {
-            feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Saving your badge...";
-            await saveCompletion();
-          }, 800);
-        }
-      } else {
-        word.classList.add('wrong');
-        feedback.innerHTML = "❌ Not quite! That's a whole food or spice. Try again!";
-        setTimeout(() => word.classList.remove('wrong'), 500);
-      }
-    });
-  });
-
-  async function saveCompletion() {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Alias Detective (+10 XP)</em> (Sign in to save progress)";
-      return;
-    }
-
-    const userId = session.user.id;
-
-    // 1. Insert Score / Badge Record
-    const { error: scoreErr } = await supabase
-      .from('user_game_scores')
-      .insert([
-        { 
-          user_id: userId, 
-          game_id: 'track1_module1.1', 
-          badge_earned: 'Alias Detective',
-          xp_gained: 10 
-        }
-      ]);
-
-    // 2. Increment Profile XP
-    const { data: profile } = await supabase.from('profiles').select('total_xp').eq('id', userId).single();
-    const newXP = (profile?.total_xp || 0) + 10;
-
-    await supabase.from('profiles').update({ total_xp: newXP }).eq('id', userId);
-
-    if (scoreErr) {
-      console.error(scoreErr);
-    } else {
-      feedback.innerHTML = "🏆 <strong>MISSION COMPLETE!</strong> Badge Unlocked: <em>Alias Detective (+10 XP)</em> saved to your dashboard! 🎉";
-    }
-  }
-</script>
-
-</body>
-</html>
+      const name = word.getAttribute('
